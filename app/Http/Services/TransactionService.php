@@ -10,9 +10,13 @@ use App\Exceptions\TransactionReversalException;
 
 class TransactionService
 {
+    /**
+     */
     public function handleDeposit(Wallet $wallet, float $amount): Transaction
     {
         return DB::transaction(function () use ($wallet, $amount) {
+            $wallet = Wallet::lockForUpdate()->find($wallet->id);
+
             $wallet->balance += $amount;
             $wallet->save();
 
@@ -24,9 +28,15 @@ class TransactionService
         });
     }
 
+    /**
+     */
     public function handleTransfer(Wallet $payerWallet, Wallet $payeeWallet, float $amount): Transaction
     {
         return DB::transaction(function () use ($payerWallet, $payeeWallet, $amount) {
+            $wallets = Wallet::lockForUpdate()->findMany([$payerWallet->id, $payeeWallet->id])->keyBy('id');
+            $payerWallet = $wallets[$payerWallet->id];
+            $payeeWallet = $wallets[$payeeWallet->id];
+
             if ($payerWallet->balance < $amount) {
                 throw new InsufficientFundsException('Saldo insuficiente para realizar a transferência.');
             }
@@ -46,6 +56,8 @@ class TransactionService
         });
     }
 
+    /**
+     */
     public function handleReversal(Transaction $originalTransaction): Transaction
     {
         return DB::transaction(function () use ($originalTransaction) {
@@ -53,21 +65,24 @@ class TransactionService
                 throw new TransactionReversalException('Esta transação já foi estornada.');
             }
 
-            $payerWallet = Wallet::find($originalTransaction->payee_wallet_id);
-            $payeeWallet = Wallet::find($originalTransaction->payer_wallet_id);
+            $newPayerWallet = Wallet::lockForUpdate()->findOrFail($originalTransaction->payee_wallet_id);
 
-            if ($payerWallet && $payeeWallet) { // Caso de Transferência
-                if ($payerWallet->balance < $originalTransaction->amount) {
-                    throw new InsufficientFundsException('O destinatário não possui saldo para o estorno.');
+            if ($originalTransaction->payer_wallet_id) {
+                $newPayeeWallet = Wallet::lockForUpdate()->findOrFail($originalTransaction->payer_wallet_id);
+
+                if ($newPayerWallet->balance < $originalTransaction->amount) {
+                    throw new InsufficientFundsException('O destinatário original não possui saldo para o estorno.');
                 }
-                $payerWallet->balance -= $originalTransaction->amount;
-                $payerWallet->save();
+                
+                $newPayerWallet->balance -= $originalTransaction->amount;
+                $newPayeeWallet->balance += $originalTransaction->amount;
 
-                $payeeWallet->balance += $originalTransaction->amount;
-                $payeeWallet->save();
-            } else { 
-                $payerWallet->balance -= $originalTransaction->amount;
-                $payerWallet->save();
+                $newPayerWallet->save();
+                $newPayeeWallet->save();
+
+            } else {
+                $newPayerWallet->balance -= $originalTransaction->amount;
+                $newPayerWallet->save();
             }
 
             $originalTransaction->status = 'reversed';
