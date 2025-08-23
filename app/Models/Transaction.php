@@ -15,4 +15,14 @@ class Transaction extends Model
         'status',
         'original_transaction_id',
     ];
+
+    public function payerWallet()
+    {
+        return $this->belongsTo(Wallet::class, 'payer_wallet_id');
+    }
+    
+    public function payeeWallet()
+    {
+        return $this->belongsTo(Wallet::class, 'payee_wallet_id');
+    }
 }
