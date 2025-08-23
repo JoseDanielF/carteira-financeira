@@ -1,5 +1,5 @@
 const API_URL = 'http://127.0.0.1:8000/api';
-
+let currentPage = 1;
 let authToken = null;
 let userData = null;
 
@@ -90,6 +90,7 @@ async function checkSession() {
         try {
             const userDetails = await apiRequest('/user', 'GET', null, true);
             userData = userDetails;
+            loadTransactions();
             updateHomePage();
             showPage(homePage);
         } catch (error) {
@@ -98,6 +99,57 @@ async function checkSession() {
         }
     } else {
         showPage(loginPage);
+    }
+}
+
+async function loadTransactions(page = 1) {
+    const historyContainer = document.getElementById('transaction-history');
+    try {
+        const response = await apiRequest(`/wallet/transactions?page=${page}`, 'GET', null, true);
+        const transactions = response.data;
+        const currentPage = response.current_page;
+
+        if (!transactions || transactions.length === 0) {
+            historyContainer.innerHTML = `<p class="text-gray-500">Nenhuma transação encontrada.</p>`;
+            return;
+        }
+
+        historyContainer.innerHTML = transactions.map(tx => {
+            let descricao = '';
+            if (tx.type === 'deposit') {
+                descricao = `Depósito de R$ ${parseFloat(tx.amount).toFixed(2)} na sua conta`;
+            } else if (tx.type === 'transfer') {
+                if (tx.payer_wallet_id === window.authWalletId) {
+                    descricao = `Transferência de R$ ${parseFloat(tx.amount).toFixed(2)} para ${tx.payee_wallet?.user?.name || '---'}`;
+                } else {
+                    descricao = `Transferência de R$ ${parseFloat(tx.amount).toFixed(2)} de ${tx.payer_wallet?.user?.name || '---'}`;
+                }
+            } else {
+                descricao = `Transação ${tx.type}`;
+            }
+
+            return `
+                <div class="p-3 border-b border-gray-200 text-left">
+                    <p class="text-sm font-semibold text-gray-800">${descricao}</p>
+                    <p class="text-xs text-gray-600">
+                        Valor: <span class="font-medium">R$ ${parseFloat(tx.amount).toFixed(2)}</span>
+                    </p>
+                    <p class="text-xs text-gray-400">${new Date(tx.created_at).toLocaleString('pt-BR')}</p>
+                </div>
+            `;
+        }).join('');
+
+        let paginationHtml = '<div class="flex justify-between mt-2">';
+        paginationHtml += `<button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" ${!response.prev_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPage - 1})">Anterior</button>`;
+        paginationHtml += `<span class="px-3 py-1">${currentPage} / ${response.last_page}</span>`;
+        paginationHtml += `<button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" ${!response.next_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPage + 1})">Próxima</button>`;
+        paginationHtml += '</div>';
+
+        historyContainer.innerHTML += paginationHtml;
+
+    } catch (error) {
+        console.error('Erro ao carregar transações:', error);
+        historyContainer.innerHTML = `<p class="text-red-500">Erro ao carregar histórico.</p>`;
     }
 }
 
@@ -135,12 +187,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
     try {
         const data = await apiRequest('/login', 'POST', { email, password });
-        authToken = data.token; 
-        
+        authToken = data.token;
+
         const userDetails = await apiRequest('/user', 'GET', null, true);
-        
+
         saveSession(data.token, userDetails);
-        
+
         updateHomePage();
         showPage(homePage);
     } catch (error) {
@@ -150,9 +202,9 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 });
 
 document.getElementById('logout-button').addEventListener('click', async () => {
-     try {
+    try {
         await apiRequest('/logout', 'POST', null, true);
-        clearSession(); 
+        clearSession();
         document.getElementById('login-form').reset();
         showPage(loginPage);
     } catch (error) {
@@ -163,20 +215,22 @@ document.getElementById('logout-button').addEventListener('click', async () => {
 document.getElementById('deposit-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const amount = parseFloat(document.getElementById('deposit-amount').value);
-    if(isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || amount <= 0) {
         showNotification('Valor de depósito inválido.');
         return;
     }
     try {
         await apiRequest('/deposit', 'POST', { amount }, true);
+        await loadTransactions();
+
         const userDetails = await apiRequest('/user', 'GET', null, true);
-        
+
         saveSession(authToken, userDetails);
-        
+
         updateHomePage();
         showNotification('Depósito realizado com sucesso!', false);
         e.target.reset();
-    } catch(error) {
+    } catch (error) {
         console.error('Falha no depósito:', error);
     }
 });
@@ -186,25 +240,27 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
     const payee_wallet_id = parseInt(document.getElementById('transfer-wallet-id').value);
     const amount = parseFloat(document.getElementById('transfer-amount').value);
 
-    if(isNaN(payee_wallet_id) || isNaN(amount) || amount <= 0) {
+    if (isNaN(payee_wallet_id) || isNaN(amount) || amount <= 0) {
         showNotification('Dados da transferência inválidos.');
         return;
     }
-    if(payee_wallet_id === userData.wallet.id) {
+    if (payee_wallet_id === userData.wallet.id) {
         showNotification('Você não pode transferir para si mesmo.');
         return;
     }
 
     try {
         await apiRequest('/transfer', 'POST', { payee_wallet_id, amount }, true);
+        await loadTransactions();
+
         const userDetails = await apiRequest('/user', 'GET', null, true);
-        
+
         saveSession(authToken, userDetails);
 
         updateHomePage();
         showNotification('Transferência realizada com sucesso!', false);
         e.target.reset();
-    } catch(error) {
+    } catch (error) {
         console.error('Falha na transferência:', error);
     }
 });
