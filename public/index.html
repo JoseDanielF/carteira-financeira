@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carteira Financeira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="container mx-auto p-4 max-w-md">
+
+        <div id="login-page" class="bg-white p-8 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Acessar Carteira</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="login-email" class="block text-gray-700 text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="login-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-gray-700 text-sm font-medium mb-2">Senha</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">Entrar</button>
+            </form>
+            <p class="text-center text-sm text-gray-600 mt-6">
+                Não tem uma conta? <a href="#" id="show-register" class="text-blue-600 hover:underline font-medium">Crie uma agora</a>
+            </p>
+        </div>
+
+        <div id="register-page" class="bg-white p-8 rounded-xl shadow-lg hidden">
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Cadastro</h2>
+            <form id="register-form">
+                <div class="mb-4">
+                    <label for="register-name" class="block text-gray-700 text-sm font-medium mb-2">Nome Completo</label>
+                    <input type="text" id="register-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="register-email" class="block text-gray-700 text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="register-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label for="register-password" class="block text-gray-700 text-sm font-medium mb-2">Senha</label>
+                    <input type="password" id="register-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                 <div class="mb-6">
+                    <label for="register-password-confirmation" class="block text-gray-700 text-sm font-medium mb-2">Confirmar Senha</label>
+                    <input type="password" id="register-password-confirmation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">Registrar</button>
+            </form>
+            <p class="text-center text-sm text-gray-600 mt-6">
+                Já tem uma conta? <a href="#" id="show-login" class="text-blue-600 hover:underline font-medium">Faça o login</a>
+            </p>
+        </div>
+
+        <div id="home-page" class="bg-white p-8 rounded-xl shadow-lg hidden w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                 <h2 class="text-2xl font-bold text-gray-800">Minha Carteira</h2>
+                 <button id="logout-button" class="text-sm text-red-500 hover:text-red-700 font-medium">Sair</button>
+            </div>
+            <div class="bg-blue-600 text-white p-6 rounded-lg mb-6">
+                <p class="text-sm opacity-80">Saldo Atual</p>
+                <p id="balance" class="text-4xl font-bold">R$ 0,00</p>
+                <p id="user-info" class="text-xs opacity-70 mt-2"></p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <form id="deposit-form" class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-700 mb-2">Depositar</h3>
+                    <div class="mb-2">
+                        <input type="number" id="deposit-amount" placeholder="Valor" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" step="0.01" min="0.01" required>
+                    </div>
+                    <button type="submit" class="w-full text-sm bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">Confirmar Depósito</button>
+                </form>
+                <form id="transfer-form" class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-700 mb-2">Transferir</h3>
+                    <div class="mb-2">
+                        <input type="number" id="transfer-wallet-id" placeholder="ID da Carteira de Destino" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="number" id="transfer-amount" placeholder="Valor" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" step="0.01" min="0.01" required>
+                    </div>
+                    <button type="submit" class="w-full text-sm bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition">Enviar Dinheiro</button>
+                </form>
+            </div>
+            <div>
+                <h3 class="font-semibold text-gray-700 mb-2">Histórico</h3>
+                <div id="transaction-history" class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
+                    <p>O histórico de transações aparecerá aqui.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="notification" class="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0">
+        </div>
+
+    </div>
+
+    <script src="js/app.js" defer></script>
+</body>
+</html>
