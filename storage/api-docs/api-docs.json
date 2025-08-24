@@ -1,0 +1,698 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Carteira Financeira",
+        "description": "Documentação da API da Carteira Financeira para autenticação e gerenciamento de usuários.",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Registra um novo usuário",
+                "description": "Cria um novo usuário e sua respectiva carteira com saldo inicial zero.",
+                "operationId": "registerUser",
+                "requestBody": {
+                    "description": "Dados para registro do novo usuário",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "José da Silva"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jose.silva@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Usuário criado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Erro de validação (ex: email já existe, senha fraca)"
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Autentica um usuário",
+                "description": "Autentica o usuário com email e senha e retorna um token de API.",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "description": "Credenciais para autenticação",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "jose.silva@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login bem-sucedido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|aBcDeFgHiJkLmNoPqRsTuVwXyZ"
+                                        },
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Credenciais inválidas"
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Desloga o usuário",
+                "description": "Invalida o token de API do usuário autenticado.",
+                "operationId": "logoutUser",
+                "responses": {
+                    "200": {
+                        "description": "Logout bem-sucedido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Deslogado com sucesso"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Não autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/deposit": {
+            "post": {
+                "tags": [
+                    "Ações da Carteira"
+                ],
+                "summary": "Realiza um depósito na carteira do usuário autenticado",
+                "operationId": "depositToWallet",
+                "requestBody": {
+                    "description": "Valor a ser depositado",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 150.75
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Depósito bem-sucedido",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Depósito realizado com sucesso!"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Não autenticado"
+                    },
+                    "422": {
+                        "description": "Erro de validação (ex: valor inválido)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/transfer": {
+            "post": {
+                "tags": [
+                    "Ações da Carteira"
+                ],
+                "summary": "Transfere um valor da carteira do usuário para outra carteira",
+                "operationId": "transferBetweenWallets",
+                "requestBody": {
+                    "description": "Dados da transferência",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "payee_wallet_id",
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "payee_wallet_id": {
+                                        "description": "ID da carteira de destino",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "amount": {
+                                        "description": "Valor a ser transferido",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 50.25
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Transferência bem-sucedida"
+                    },
+                    "401": {
+                        "description": "Não autenticado"
+                    },
+                    "404": {
+                        "description": "Carteira de destino não encontrada"
+                    },
+                    "422": {
+                        "description": "Erro de validação (ex: saldo insuficiente)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/wallet/transactions": {
+            "get": {
+                "tags": [
+                    "Ações da Carteira"
+                ],
+                "summary": "Lista as transações da carteira do usuário autenticado",
+                "operationId": "getUserWalletTransactions",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número da página para paginação",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada de transações",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionPaginated"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Não autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/transactions/{transaction}/reverse": {
+            "post": {
+                "tags": [
+                    "Transações"
+                ],
+                "summary": "Estorna (reverte) uma transação existente",
+                "description": "Apenas o originador da transação (quem depositou ou enviou) pode estornar.",
+                "operationId": "reverseTransaction",
+                "parameters": [
+                    {
+                        "name": "transaction",
+                        "in": "path",
+                        "description": "ID da transação a ser estornada",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estorno bem-sucedido"
+                    },
+                    "401": {
+                        "description": "Não autenticado"
+                    },
+                    "404": {
+                        "description": "Transação não encontrada"
+                    },
+                    "422": {
+                        "description": "Erro ao processar estorno (ex: saldo insuficiente para estornar)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/transactions": {
+            "get": {
+                "tags": [
+                    "Transações"
+                ],
+                "summary": "Lista todas as transações (Admin)",
+                "operationId": "listAllTransactions",
+                "responses": {
+                    "200": {
+                        "description": "Lista paginada de todas as transações",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionPaginated"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/transactions/{transaction}": {
+            "get": {
+                "tags": [
+                    "Transações"
+                ],
+                "summary": "Exibe uma transação específica",
+                "operationId": "showTransaction",
+                "parameters": [
+                    {
+                        "name": "transaction",
+                        "in": "path",
+                        "description": "ID da transação",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalhes da transação",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transaction"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transação não encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Transações"
+                ],
+                "summary": "Deleta uma transação (Admin)",
+                "operationId": "deleteTransaction",
+                "parameters": [
+                    {
+                        "name": "transaction",
+                        "in": "path",
+                        "description": "ID da transação a ser deletada",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Transação deletada com sucesso"
+                    },
+                    "404": {
+                        "description": "Transação não encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Transaction": {
+                "title": "Transaction Model",
+                "description": "Representa uma transação financeira no sistema.",
+                "properties": {
+                    "id": {
+                        "description": "ID da transação",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "payer_wallet_id": {
+                        "description": "ID da carteira do pagador",
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "payee_wallet_id": {
+                        "description": "ID da carteira do recebedor",
+                        "type": "integer",
+                        "example": 2,
+                        "nullable": true
+                    },
+                    "amount": {
+                        "description": "Valor da transação",
+                        "type": "number",
+                        "format": "float",
+                        "example": 100.5
+                    },
+                    "type": {
+                        "description": "Tipo da transação",
+                        "type": "string",
+                        "enum": [
+                            "deposit",
+                            "transfer",
+                            "reversal"
+                        ],
+                        "example": "transfer"
+                    },
+                    "status": {
+                        "description": "Status da transação",
+                        "type": "string",
+                        "enum": [
+                            "completed",
+                            "reversed"
+                        ],
+                        "example": "completed"
+                    },
+                    "original_transaction_id": {
+                        "description": "ID da transação original (para estornos)",
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Data de criação",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Data da última atualização",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "payer_wallet": {
+                        "$ref": "#/components/schemas/Wallet"
+                    },
+                    "payee_wallet": {
+                        "$ref": "#/components/schemas/Wallet"
+                    }
+                },
+                "type": "object"
+            },
+            "TransactionPaginated": {
+                "title": "Transaction Paginated Response",
+                "properties": {
+                    "current_page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Transaction"
+                        }
+                    },
+                    "first_page_url": {
+                        "type": "string",
+                        "example": "http://localhost/api/transactions?page=1"
+                    },
+                    "from": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "last_page": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "last_page_url": {
+                        "type": "string",
+                        "example": "http://localhost/api/transactions?page=5"
+                    },
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "next_page_url": {
+                        "type": "string",
+                        "example": "http://localhost/api/transactions?page=2",
+                        "nullable": true
+                    },
+                    "path": {
+                        "type": "string",
+                        "example": "http://localhost/api/transactions"
+                    },
+                    "per_page": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "prev_page_url": {
+                        "type": "string",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "to": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 75
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User Model",
+                "description": "Representa um usuário no sistema.",
+                "properties": {
+                    "id": {
+                        "description": "ID do usuário",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "Nome do usuário",
+                        "type": "string",
+                        "example": "José da Silva"
+                    },
+                    "email": {
+                        "description": "Email do usuário",
+                        "type": "string",
+                        "format": "email",
+                        "example": "jose.silva@example.com"
+                    },
+                    "email_verified_at": {
+                        "description": "Data de verificação do email",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": null
+                    },
+                    "created_at": {
+                        "description": "Data de criação",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Data da última atualização",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Wallet": {
+                "title": "Wallet Model",
+                "description": "Representa a carteira de um usuário, contendo seu saldo.",
+                "properties": {
+                    "id": {
+                        "description": "ID da carteira",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "description": "ID do usuário dono da carteira",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "balance": {
+                        "description": "Saldo atual da carteira",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1234.56
+                    },
+                    "created_at": {
+                        "description": "Data de criação",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Data da última atualização",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/User"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "description": "Autenticação via Sanctum. Insira o token Bearer.",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Autenticação",
+            "description": "Autenticação"
+        },
+        {
+            "name": "Ações da Carteira",
+            "description": "Ações da Carteira"
+        },
+        {
+            "name": "Transações",
+            "description": "Transações"
+        }
+    ]
+}
