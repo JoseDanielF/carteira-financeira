@@ -6,12 +6,14 @@ let userData = null;
 const loginPage = document.getElementById('login-page');
 const registerPage = document.getElementById('register-page');
 const homePage = document.getElementById('home-page');
+const historyPage = document.getElementById('history-page');
 const notification = document.getElementById('notification');
 
 function showPage(page) {
     loginPage.classList.add('hidden');
     registerPage.classList.add('hidden');
     homePage.classList.add('hidden');
+    historyPage.classList.add('hidden');
     page.classList.remove('hidden');
 }
 
@@ -102,54 +104,101 @@ async function checkSession() {
     }
 }
 
+async function reverseTransaction(transactionId) {
+    if (!confirm('Você tem certeza que deseja reverter esta transação?')) {
+        return;
+    }
+
+    try {
+        const response = await apiRequest(`/transactions/${transactionId}/reverse`, 'POST', null, true);
+
+        showNotification(response.message, false);
+
+        const userDetails = await apiRequest('/user', 'GET', null, true);
+        saveSession(authToken, userDetails);
+        updateHomePage();
+        showPage(homePage);
+
+    } catch (error) {
+        console.error('Falha ao reverter transação:', error);
+    }
+}
+
 async function loadTransactions(page = 1) {
+    currentPage = page;
     const historyContainer = document.getElementById('transaction-history');
     try {
         const response = await apiRequest(`/wallet/transactions?page=${page}`, 'GET', null, true);
         const transactions = response.data;
-        const currentPage = response.current_page;
+        const currentPageNum = response.current_page;
 
         if (!transactions || transactions.length === 0) {
-            historyContainer.innerHTML = `<p class="text-gray-500">Nenhuma transação encontrada.</p>`;
+            historyContainer.innerHTML = `<p class="p-4 text-gray-500">Nenhuma transação encontrada.</p>`;
             return;
         }
 
-        historyContainer.innerHTML = transactions.map(tx => {
+        const transactionsHtml = transactions.map(tx => {
             let descricao = '';
-            if (tx.type === 'deposit') {
-                descricao = `Depósito de R$ ${parseFloat(tx.amount).toFixed(2)} na sua conta`;
+
+            if (tx.type === 'reversal') {
+                descricao = `Estorno de transação`;
+            } else if (tx.type === 'transfer' && tx.payer_wallet_id === userData.wallet.id) {
+                descricao = `Transferência enviada para ${tx.payee_wallet?.user?.name || 'ID ' + tx.payee_wallet_id}`;
             } else if (tx.type === 'transfer') {
-                if (tx.payer_wallet_id === window.authWalletId) {
-                    descricao = `Transferência de R$ ${parseFloat(tx.amount).toFixed(2)} para ${tx.payee_wallet?.user?.name || '---'}`;
-                } else {
-                    descricao = `Transferência de R$ ${parseFloat(tx.amount).toFixed(2)} de ${tx.payer_wallet?.user?.name || '---'}`;
-                }
-            } else {
-                descricao = `Transação ${tx.type}`;
+                descricao = `Transferência recebida de ${tx.payer_wallet?.user?.name || 'ID ' + tx.payer_wallet_id}`;
+            } else if (tx.type === 'deposit') {
+                descricao = `Depósito realizado`;
+            }
+
+            let isIncoming = false;
+            if (tx.type === 'deposit' || (tx.type === 'transfer' && tx.payee_wallet_id === userData.wallet.id) || (tx.type === 'reversal' && tx.payee_wallet_id === userData.wallet.id)) {
+                isIncoming = true;
+            }
+
+            const amountClass = isIncoming ? 'text-green-600' : 'text-red-600';
+            const amountSign = isIncoming ? '+' : '-';
+
+            let reversalButton = '';
+            const canReverse = tx.status !== 'reversed' &&
+                (tx.type === 'deposit' || (tx.type === 'transfer' && tx.payer_wallet_id === userData.wallet.id));
+
+            if (canReverse) {
+                reversalButton = `
+                    <button onclick="reverseTransaction(${tx.id})" class="text-xs bg-orange-500 text-white px-2 py-1 rounded hover:bg-orange-600 transition-colors">
+                        Reverter
+                    </button>
+                `;
             }
 
             return `
                 <div class="p-3 border-b border-gray-200 text-left">
-                    <p class="text-sm font-semibold text-gray-800">${descricao}</p>
-                    <p class="text-xs text-gray-600">
-                        Valor: <span class="font-medium">R$ ${parseFloat(tx.amount).toFixed(2)}</span>
-                    </p>
-                    <p class="text-xs text-gray-400">${new Date(tx.created_at).toLocaleString('pt-BR')}</p>
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">${descricao}</p>
+                            <p class="text-xs text-gray-400">${new Date(tx.created_at).toLocaleString('pt-BR')}</p>
+                        </div>
+                        <p class="text-sm font-bold ${amountClass} whitespace-nowrap">
+                            ${amountSign} R$ ${parseFloat(tx.amount).toFixed(2).replace('.', ',')}
+                        </p>
+                    </div>
+                    <div class="mt-2">
+                        ${reversalButton}
+                    </div>
                 </div>
             `;
         }).join('');
 
-        let paginationHtml = '<div class="flex justify-between mt-2">';
-        paginationHtml += `<button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" ${!response.prev_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPage - 1})">Anterior</button>`;
-        paginationHtml += `<span class="px-3 py-1">${currentPage} / ${response.last_page}</span>`;
-        paginationHtml += `<button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300" ${!response.next_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPage + 1})">Próxima</button>`;
+        let paginationHtml = `<div class="flex justify-between items-center p-2 bg-gray-100 rounded-b-lg">`;
+        paginationHtml += `<button class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50" ${!response.prev_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPageNum - 1})">Anterior</button>`;
+        paginationHtml += `<span class="text-sm">Página ${currentPageNum} de ${response.last_page}</span>`;
+        paginationHtml += `<button class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50" ${!response.next_page_url ? 'disabled' : ''} onclick="loadTransactions(${currentPageNum + 1})">Próxima</button>`;
         paginationHtml += '</div>';
 
-        historyContainer.innerHTML += paginationHtml;
+        historyContainer.innerHTML = transactionsHtml + paginationHtml;
 
     } catch (error) {
         console.error('Erro ao carregar transações:', error);
-        historyContainer.innerHTML = `<p class="text-red-500">Erro ao carregar histórico.</p>`;
+        historyContainer.innerHTML = `<p class="p-4 text-red-500">Erro ao carregar histórico.</p>`;
     }
 }
 
@@ -157,10 +206,17 @@ document.getElementById('show-register').addEventListener('click', (e) => {
     e.preventDefault();
     showPage(registerPage);
 });
-
 document.getElementById('show-login').addEventListener('click', (e) => {
     e.preventDefault();
     showPage(loginPage);
+});
+
+document.getElementById('show-history-button').addEventListener('click', () => {
+    loadTransactions();
+    showPage(historyPage);
+});
+document.getElementById('back-to-home-button').addEventListener('click', () => {
+    showPage(homePage);
 });
 
 document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -186,15 +242,18 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const password = document.getElementById('login-password').value;
 
     try {
-        const data = await apiRequest('/login', 'POST', { email, password });
-        authToken = data.token;
+        const loginData = await apiRequest('/login', 'POST', { email, password });
+
+        authToken = loginData.token;
 
         const userDetails = await apiRequest('/user', 'GET', null, true);
 
-        saveSession(data.token, userDetails);
+        saveSession(loginData.token, userDetails);
 
+        await loadTransactions();
         updateHomePage();
         showPage(homePage);
+
     } catch (error) {
         authToken = null;
         console.error('Falha no login:', error);
@@ -204,11 +263,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 document.getElementById('logout-button').addEventListener('click', async () => {
     try {
         await apiRequest('/logout', 'POST', null, true);
+    } catch (error) {
+        console.error('Falha no logout (API):', error);
+    } finally {
         clearSession();
         document.getElementById('login-form').reset();
         showPage(loginPage);
-    } catch (error) {
-        console.error('Falha no logout:', error);
     }
 });
 
@@ -221,13 +281,10 @@ document.getElementById('deposit-form').addEventListener('submit', async (e) => 
     }
     try {
         await apiRequest('/deposit', 'POST', { amount }, true);
-        await loadTransactions();
-
         const userDetails = await apiRequest('/user', 'GET', null, true);
-
         saveSession(authToken, userDetails);
-
         updateHomePage();
+        await loadTransactions();
         showNotification('Depósito realizado com sucesso!', false);
         e.target.reset();
     } catch (error) {
@@ -251,13 +308,10 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
     try {
         await apiRequest('/transfer', 'POST', { payee_wallet_id, amount }, true);
-        await loadTransactions();
-
         const userDetails = await apiRequest('/user', 'GET', null, true);
-
         saveSession(authToken, userDetails);
-
         updateHomePage();
+        await loadTransactions();
         showNotification('Transferência realizada com sucesso!', false);
         e.target.reset();
     } catch (error) {

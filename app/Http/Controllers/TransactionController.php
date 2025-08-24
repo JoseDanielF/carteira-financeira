@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Log;
 use App\Models\Wallet;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -79,13 +79,15 @@ class TransactionController extends Controller
         try {
             $this->transactionService->handleReversal($transaction);
 
-            return response()->json(['message' => 'Transação estornada com sucesso.']);
+            return response()->json(['message' => 'Transação estornada com sucesso.'], 200);
         } catch (TransactionReversalException | InsufficientFundsException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Não foi possível encontrar as carteiras para o estorno.'], 404);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Ocorreu um erro durante o estorno.'], 500);
+            Log::error('Falha no estorno da transação ' . $transaction->id, ['error' => $e->getMessage()]);
+
+            return response()->json(['message' => 'Ocorreu um erro inesperado durante o estorno.'], 500);
         }
     }
 

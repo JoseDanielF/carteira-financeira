@@ -66,7 +66,7 @@
                 <p id="balance" class="text-4xl font-bold">R$ 0,00</p>
                 <p id="user-info" class="text-xs opacity-70 mt-2"></p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <form id="deposit-form" class="bg-gray-50 p-4 rounded-lg">
                     <h3 class="font-semibold text-gray-700 mb-2">Depositar</h3>
                     <div class="mb-2">
@@ -85,17 +85,23 @@
                     <button type="submit" class="w-full text-sm bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition">Enviar Dinheiro</button>
                 </form>
             </div>
-            <div>
-                <h3 class="font-semibold text-gray-700 mb-2">Histórico</h3>
-                <div id="transaction-history" class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">
-                    <p>O histórico de transações aparecerá aqui.</p>
-                </div>
+            <div class="mt-6">
+                <button id="show-history-button" class="w-full bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition duration-300 font-semibold">Ver Histórico</button>
             </div>
         </div>
         
-        <div id="notification" class="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0">
+        <div id="history-page" class="bg-white p-8 rounded-xl shadow-lg hidden w-full max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Histórico</h2>
+                <button id="back-to-home-button" class="text-sm text-blue-600 hover:underline font-medium">Voltar</button>
+            </div>
+            <div id="transaction-history" class="text-center text-gray-500 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+                <p class="p-4">Carregando histórico...</p>
+            </div>
         </div>
 
+        <div id="notification" class="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0">
+        </div>
     </div>
 
     <script src="js/app.js" defer></script>

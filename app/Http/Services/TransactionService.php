@@ -73,14 +73,17 @@ class TransactionService
                 if ($newPayerWallet->balance < $originalTransaction->amount) {
                     throw new InsufficientFundsException('O destinatário original não possui saldo para o estorno.');
                 }
-                
+
                 $newPayerWallet->balance -= $originalTransaction->amount;
                 $newPayeeWallet->balance += $originalTransaction->amount;
 
                 $newPayerWallet->save();
                 $newPayeeWallet->save();
-
             } else {
+                if ($newPayerWallet->balance < $originalTransaction->amount) {
+                    throw new InsufficientFundsException('Você não possui saldo suficiente para estornar este depósito.');
+                }
+
                 $newPayerWallet->balance -= $originalTransaction->amount;
                 $newPayerWallet->save();
             }
