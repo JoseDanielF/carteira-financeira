@@ -19,6 +19,10 @@ use App\Http\Controllers\TransactionController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('/debug-sentry', function () {
+    throw new Exception('Meu primeiro erro no Sentry!');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user()->load('wallet');
