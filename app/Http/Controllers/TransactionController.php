@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use OpenApi\Annotations as OA;
-use Sentry\SentrySdk;
 
 class TransactionController extends Controller
 {
@@ -58,7 +57,6 @@ class TransactionController extends Controller
 
             return response()->json(['message' => 'Depósito realizado com sucesso!']);
         } catch (\Throwable $e) {
-            Sentry::captureException($e);
             return response()->json([
                 'message' => 'Ocorreu um erro durante o depósito.',
                 'error'   => $e->getMessage(),
@@ -108,13 +106,10 @@ class TransactionController extends Controller
 
             return response()->json(['message' => 'Transferência realizada com sucesso!'], 201);
         } catch (InsufficientFundsException $e) {
-            Sentry::captureException($e);
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (ModelNotFoundException $e) {
-            Sentry::captureException($e);
             return response()->json(['message' => 'Carteira de destino não encontrada.'], 404);
         } catch (\Throwable $e) {
-            Sentry::captureException($e);
             return response()->json(['message' => 'Ocorreu um erro durante a transferência.'], 500);
         }
     }
@@ -181,13 +176,10 @@ class TransactionController extends Controller
 
             return response()->json(['message' => 'Transação estornada com sucesso.'], 200);
         } catch (TransactionReversalException | InsufficientFundsException $e) {
-            Sentry::captureException($e); 
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (ModelNotFoundException $e) {
-            Sentry::captureException($e); 
             return response()->json(['message' => 'Não foi possível encontrar as carteiras para o estorno.'], 404);
         } catch (\Throwable $e) {
-            Sentry::captureException($e); 
             Log::error('Falha no estorno da transação ' . $transaction->id, ['error' => $e->getMessage()]);
 
             return response()->json(['message' => 'Ocorreu um erro inesperado durante o estorno.'], 500);

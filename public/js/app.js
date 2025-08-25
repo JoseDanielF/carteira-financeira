@@ -91,10 +91,13 @@ async function checkSession() {
         authToken = savedToken;
         try {
             const userDetails = await apiRequest('/user', 'GET', null, true);
+
             userData = userDetails;
-            loadTransactions();
+
             updateHomePage();
+            loadTransactions();
             showPage(homePage);
+            
         } catch (error) {
             clearSession();
             showPage(loginPage);

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use OpenApi\Annotations as OA;
-use Sentry\SentrySdk;
 
 /**
  * @OA\Info(
@@ -65,24 +64,19 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        try {
-            $user = DB::transaction(function () use ($request) {
-                $user = User::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'password' => Hash::make($request->password),
-                ]);
+        $user = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
 
-                $user->wallet()->create(['balance' => 0]);
+            $user->wallet()->create(['balance' => 0]);
 
-                return $user;
-            });
+            return $user;
+        });
 
-            return response()->json($user, 201);
-        } catch (\Throwable $e) {
-            Sentry::captureException($e);
-            return response()->json(['message' => 'Ocorreu um erro inesperado durante o registro.'], 500);
-        }
+        return response()->json($user, 201);
     }
 
     /**
@@ -125,8 +119,6 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (!auth()->attempt($credentials)) {
-            Sentry::captureMessage("Tentativa de login falhou para o email: {$request->email}", 'warning');
-
             return response()->json(['message' => 'Credenciais inválidas.'], 401);
         }
 
