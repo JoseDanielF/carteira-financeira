@@ -10,17 +10,24 @@ use App\Exceptions\TransactionReversalException;
 
 class TransactionService
 {
-    /**
-     */
+    protected Wallet $walletModel;
+    protected Transaction $transactionModel;
+
+    public function __construct(Wallet $walletModel, Transaction $transactionModel)
+    {
+        $this->walletModel = $walletModel;
+        $this->transactionModel = $transactionModel;
+    }
+
     public function handleDeposit(Wallet $wallet, float $amount): Transaction
     {
         return DB::transaction(function () use ($wallet, $amount) {
-            $wallet = Wallet::lockForUpdate()->find($wallet->id);
+            $wallet = $this->walletModel->lockForUpdate()->find($wallet->id);
 
             $wallet->balance += $amount;
             $wallet->save();
 
-            return Transaction::create([
+            return $this->transactionModel->create([
                 'payee_wallet_id' => $wallet->id,
                 'amount' => $amount,
                 'type' => 'deposit',
