@@ -4,11 +4,11 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Sentry\State\Scope;
 
 class Handler extends ExceptionHandler
 {
     /**
-     * A list of the exception types that are not reported.
      *
      * @var array<int, class-string<Throwable>>
      */
@@ -17,9 +17,8 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * A list of the inputs that are never flashed for validation exceptions.
      *
-     * @var array<int, string>
+     * @var array<string>
      */
     protected $dontFlash = [
         'current_password',
@@ -28,14 +27,19 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * Register the exception handling callbacks for the application.
      *
      * @return void
      */
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            //
+            if (app()->bound('sentry') && $this->shouldReport($e)) {
+                app('sentry')->captureException($e, function (Scope $scope): void {
+                    if (auth()->check()) {
+                        $scope->setUser(['id' => auth()->id()]);
+                    }
+                });
+            }
         });
     }
 }
